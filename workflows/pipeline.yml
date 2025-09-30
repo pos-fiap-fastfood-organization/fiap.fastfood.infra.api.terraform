@@ -1,0 +1,33 @@
+name: Deploy API to EKS
+
+on:
+  repository_dispatch:
+    types: [deploy-api]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_TERRAFORM }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_TERRAFORM }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: |
+          terraform apply -auto-approve \
+            -var="cluster_name=${{ secrets.EKS_CLUSTER_NAME }}" \
+            -var="docker_image=${{ github.event.client_payload.image }}" \
+            -var="mercadopago_token=${{ secrets.MERCADOPAGO_TOKEN }}" \
+            -var="mongo_connection=${{ secrets.MONGO_CONNECTION }}"
