@@ -3,7 +3,7 @@ resource "kubernetes_config_map" "app_config" {
     name = "${var.app_name}-config"
   }
   data = {
-    MERCADOPAGO_API_URL   = "https://api.mercadopago.com"
+    MERCADOPAGO_API_URL    = "https://api.mercadopago.com"
     ASPNETCORE_ENVIRONMENT = "Development"
   }
 }
@@ -13,8 +13,8 @@ resource "kubernetes_secret" "app_secret" {
     name = "${var.app_name}-secret"
   }
   data = {
-    MERCADOPAGO_API_TOKEN  = var.mercadopago_api_token
-    StringConnectionMongo  = var.mongo_connection_string
+    MERCADOPAGO_API_TOKEN = var.mercadopago_api_token
+    StringConnectionMongo = var.mongo_connection_string
   }
   type = "Opaque"
 }

@@ -1,6 +1,10 @@
-output "service_hostname" {
-  description = "Hostname público do LoadBalancer criado para a API"
-  value       = kubernetes_service.app.status[0].load_balancer[0].ingress[0].hostname
+output "service_endpoint" {
+  description = "Endpoint público do LoadBalancer (hostname ou IP)"
+  value = (
+    try(kubernetes_service.app.status[0].load_balancer[0].ingress[0].hostname, null) != null ?
+    kubernetes_service.app.status[0].load_balancer[0].ingress[0].hostname :
+    kubernetes_service.app.status[0].load_balancer[0].ingress[0].ip
+  )
 }
 
 output "service_name" {
