@@ -29,5 +29,5 @@ jobs:
           terraform apply -auto-approve \
             -var="cluster_name=${{ secrets.EKS_CLUSTER_NAME }}" \
             -var="docker_image=${{ github.event.client_payload.image }}" \
-            -var="mercadopago_token=${{ secrets.MERCADOPAGO_TOKEN }}" \
-            -var="mongo_connection=${{ secrets.MONGO_CONNECTION }}"
+            -var="mercadopago_api_token=${{ secrets.MERCADOPAGO_TOKEN }}" \
+            -var="mongo_password=${{ secrets.MONGO_PASSWORD }}"

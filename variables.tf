@@ -1,6 +1,6 @@
 variable "aws_region" {
   type    = string
-  default = "us-east-2"
+  default = "us-east-1"
 }
 
 variable "cluster_name" {
@@ -31,12 +31,13 @@ variable "environment" {
   default = "Development"
 }
 
-variable "mercadopago_token" {
+variable "mercadopago_api_token" {
   type      = string
   sensitive = true
 }
 
-variable "mongo_connection" {
-  type      = string
-  sensitive = true
+variable "mongo_password" {
+  description = "Senha do usuário do MongoDB Atlas"
+  type        = string
+  sensitive   = true
 }

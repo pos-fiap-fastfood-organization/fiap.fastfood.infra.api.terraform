@@ -1,3 +1,44 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+# Busca outputs do infra-base (EKS)
+data "terraform_remote_state" "base" {
+  backend = "s3"
+  config = {
+    bucket = "fiap-fastfood-terraform-state-lgrando"
+    key    = "eks/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+# Busca outputs do infra-database (MongoDB Atlas)
+data "terraform_remote_state" "database" {
+  backend = "s3"
+  config = {
+    bucket = "fiap-fastfood-terraform-state-lgrando"
+    key    = "atlas/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+# Autenticação no EKS
+data "aws_eks_cluster" "cluster" {
+  name = data.terraform_remote_state.base.outputs.cluster_name
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name = data.terraform_remote_state.base.outputs.cluster_name
+}
+
+# Provider Kubernetes apontando pro cluster EKS
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.cluster.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.cluster.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.cluster.token
+}
+
+# ConfigMap com variáveis da aplicação
 resource "kubernetes_config_map" "app_config" {
   metadata {
     name = "${var.app_name}-config"
@@ -8,17 +49,19 @@ resource "kubernetes_config_map" "app_config" {
   }
 }
 
+# Secret com token e string de conexão completa do MongoDB
 resource "kubernetes_secret" "app_secret" {
   metadata {
     name = "${var.app_name}-secret"
   }
   data = {
     MERCADOPAGO_API_TOKEN = var.mercadopago_api_token
-    StringConnectionMongo = var.mongo_connection_string
+    StringConnectionMongo = "mongodb+srv://${data.terraform_remote_state.database.outputs.mongodb_user}:${var.mongo_password}@${replace(data.terraform_remote_state.database.outputs.mongodb_connection_string, "mongodb://", "")}/${data.terraform_remote_state.database.outputs.mongodb_database}?retryWrites=true&w=majority"
   }
   type = "Opaque"
 }
 
+# Deployment da API
 resource "kubernetes_deployment" "app" {
   metadata {
     name = var.app_name
@@ -46,7 +89,7 @@ resource "kubernetes_deployment" "app" {
       spec {
         container {
           name  = var.app_name
-          image = var.image
+          image = var.docker_image
 
           port {
             container_port = var.container_port
@@ -94,6 +137,7 @@ resource "kubernetes_deployment" "app" {
   }
 }
 
+# Horizontal Pod Autoscaler
 resource "kubernetes_horizontal_pod_autoscaler_v2" "app_hpa" {
   metadata {
     name = "${var.app_name}-hpa"
@@ -122,6 +166,7 @@ resource "kubernetes_horizontal_pod_autoscaler_v2" "app_hpa" {
   }
 }
 
+# Service para expor a API
 resource "kubernetes_service" "app" {
   metadata {
     name = "${var.app_name}-service"

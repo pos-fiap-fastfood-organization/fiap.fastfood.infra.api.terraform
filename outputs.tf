@@ -1,5 +1,5 @@
 output "service_endpoint" {
-  description = "Endpoint público do LoadBalancer (hostname ou IP)"
+  description = "Endpoint público do LoadBalancer"
   value = (
     try(kubernetes_service.app.status[0].load_balancer[0].ingress[0].hostname, null) != null ?
     kubernetes_service.app.status[0].load_balancer[0].ingress[0].hostname :
